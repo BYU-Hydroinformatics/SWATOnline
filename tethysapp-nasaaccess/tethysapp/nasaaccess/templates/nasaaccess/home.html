@@ -1,0 +1,265 @@
+{% extends "nasaaccess/base.html" %}
+{% load tethys_gizmos %}
+
+{% block styles %}
+{{ block.super }}
+<!--<link rel="stylesheet" href="https://code.jquery.com/ui/3.3.1/themes/smoothness/jquery-ui.css">-->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/openlayers/4.4.2/ol.css" type="text/css">
+<link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/css/bootstrap-datepicker3.css" rel="stylesheet"/>
+
+
+{% endblock %}
+
+{% block global_scripts %}
+{{block.super}}
+<!--<script src="https://code.jquery.com/ui/3.3.1/jquery-ui.js"></script>-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/openlayers/4.4.2/ol.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/1.3.4/chroma.min.js"></script>
+<script src="https://code.highcharts.com/stock/highstock.js"></script>
+<script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/js/bootstrap-datepicker.js"></script>
+<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/locales/bootstrap-datepicker.es.min.js"></script>-->
+
+
+
+{% endblock %}
+
+{% block header_buttons %}
+  <div class="header-button glyphicon-button" data-toggle="tooltip" data-placement="bottom" title="Help">
+    <a data-toggle="modal" data-target="#help-modal"><span class="glyphicon glyphicon-question-sign"></span></a>
+  </div>
+{% endblock %}
+
+{% block app_navigation_items %}
+
+{% endblock %}
+
+{% block app_content_override %}
+
+    <section>
+        <!--<div class="alert alert-warning" id="not-avail"> <strong>UNDER DEVELOPMENT:</strong> GPM and GLDAS Poly Centroid functionality will be available soon</div>-->
+        <div class="alert alert-success hidden" id="job_init"><strong>SUCCESS!</strong> Your request has been submitted. An email will be sent to you when the data is ready to download.</div>
+        <div class="form-container">
+            <div class="form">
+                <div class="file-select">
+                    <h6><strong>Select Watershed Boundary</strong></h6>
+                    {% gizmo select_watershed %}
+                    <div id="addShp" class="btn-group" role="group">
+                      <a class="btn btn-info" role="button" id="addShp-btn">
+                        <span class="glyphicon glyphicon-upload"></span>&nbsp;&nbsp;Upload New Watershed </a>
+                    </div>
+                    <br>
+                    <br>
+                    <h6><strong>Select DEM</strong></h6>
+                    {% gizmo select_dem %}
+                    <div id="addDem" class="btn-group" role="group">
+                      <a class="btn btn-info" role="button" id="addDem-btn">
+                        <span class="glyphicon glyphicon-upload"></span>&nbsp;&nbsp;Upload New DEM </a>
+                    </div>
+                </div>
+                <br>
+                <br>
+                <h6><strong>Select Date Range</strong></h6>
+                <div class="input-group input-daterange">
+                    {% gizmo start_pick %}
+                <div class="input-group-addon">to</div>
+                    {% gizmo end_pick %}
+                </div>
+                <h6><strong>Select Functions</strong></h6>
+                <table class="table table-striped">
+                    <thead>
+                      <tr>
+                        <th></th>
+                        <th>Function</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><input class="chk" type="checkbox" value="GLDASpolyCentroid"></td>
+                        <td>GLDASpolycentroid</td>
+                        <td>Create daily air temperature time-series files at the centroid of each polygon within the selected boundary. Generated from
+                            NASA GLDAS remote sensing products.</td>
+                      </tr>
+                      <tr>
+                        <td><input class="chk" type="checkbox" value="GLDASwat"></td>
+                        <td>GLDASwat</td>
+                        <td>Create SWAT-compatible daily air temperature daily time-series files evenly distributed (on a grid) over the selected boundary. Generated from
+                            NASA GLDAS remote sensing products.</td>
+                      </tr>
+                      <tr>
+                        <td><input class="chk" type="checkbox" value="GPMpolyCentroid"></td>
+                        <td>GPMpolycentroid</td>
+                        <td>Create daily rainfall time-series files at the centroid of each polygon within the selected boundary. Generated from
+                            NASA GPM remote sensing products.</td>
+                      </tr>
+                      <tr>
+                        <td><input class="chk" type="checkbox" value="GPMswat"></td>
+                        <td>GPMswat</td>
+                        <td>Create daily rainfall time-series files evenly distributed (on a grid) over the selected boundary. Generated from
+                            NASA GPM remote sensing products.</td>
+                      </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div id="right">
+            <div id="map" class="map"></div>
+            <br>
+            <br>
+            <button class="btn btn-lg bt-block btn-primary" id="nasaaccess">Run nasaaccess</button>
+            <br>
+            <br>
+            <button class="btn btn-lg btn-success" id="download_data">Download Data</button>
+        </div>
+
+    </section>
+{% endblock %}
+
+{# Use the after_app_content block for modals #}
+{% block after_app_content %}
+  <!-- Example Modal -->
+  <div class="modal fade" id="help-modal" tabindex="-1" role="dialog" aria-labelledby="help-modal-label">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h5 class="modal-title" id="help-modal-label">Welcome to nasaaccess</h5>
+        </div>
+        <div class="modal-body">
+            <p>The nasaaccess Tethys App is a web platform developed to generate weather station files
+                needed for the Soil and Water Assessment Tool (SWAT) and other hydrologic models.
+            </p>
+            <p>More information about methodologies used in NASA Access can be obtained from Mohammed et al., 2018
+                <a href='https://doi.org/10.3390/rs10060885'>(https://doi.org/10.3390/rs10060885)</a>.
+            </p>
+            <p>This application was built to provide a user interface for accessing the nasaaccess R package without
+                needing a local installation of R or setting a user account at
+                <a href='https://disc.gsfc.nasa.gov/registration/registration-for-data-access'>NASA GES DISC</a>.
+            </p>
+            <br>
+            <p><strong>How To:</strong> Accessing GPM (precipitation) and GLDAS (air temperature) data products from NASA</p>
+                <ol>
+                    <li class="welcome-substep1">Select a watershed or upload your own (<strong>must be a polygon shapefile or json file in WGS 84 geographic projection</strong>)</li>
+                    <li class="welcome-substep1">Select a DEM or upload your own (<strong>must be a TIFF file in WGS-84 geographic projection</strong>)</li>
+                    <li class="welcome-substep1">Select a date range</li>
+                    <li class="welcome-substep1">Select at least one of the nasaaccess functions</li>
+                    <li class="welcome-substep1">Click the "Run nasaaccess" button</li>
+                    <li class="welcome-substep1">Provide an email address for the app to contact you when the data is ready and click "Submit"</li>
+                    <li class="welcome-substep1">Navigate the the nasaaaccess web application (in the same app portal) to download the data</li>
+                </ol>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- Download Data Modal -->
+  <div class="modal fade" id="download-modal" tabindex="-1" role="dialog" aria-labelledby="download-modal-label">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h5 class="modal-title" id="download-modal-label">Download Data</h5>
+        </div>
+        <div class="modal-body">
+            <p>If you have previously run the NASAaccess function, you should have received at 6-digit access code.</p>
+            <p>Please input your access code below and click the "Download" button to download the files from your
+                NASAaccess query.</p>
+            <form class="form" method="post" enctype="multipart/form-data" action="download/">
+                {% csrf_token %}
+                {{ accesscodeform }}
+                <br>
+                <br>
+                <input class="btn btn-success" type="submit" value="Download">
+            </form>
+
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- Contact Information Modal -->
+  <div class="modal fade" id="cont-modal" tabindex="-1" role="dialog" aria-labelledby="cont-modal-label">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h5 class="modal-title" id="cont-modal-label">Contact Information</h5>
+        </div>
+        <div class="modal-body">
+            <p>Depending on the watershed size and the date range you selected,
+                the nasaaccess process may take some time.
+                Please provide your email here and we will contact you with a
+                6 digit access code for downloading your data when the process is complete.</p>
+            <label for="id_email">Email Address:</label>
+            <input id="id_email" type="email" placeholder="Email" size="30" required<input>
+            <p>Your email will only remain in our database until your access code has been sent out.
+                The access code you receive will then be valid for 3 days.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" id="submit_form">Submit</button>
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- Upload New Shapefile Modal -->
+  <div class="modal fade" id="shp-modal" tabindex="-1" role="dialog" aria-labelledby="shp-modal-label">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h5 class="modal-title" id="shp-modal-label">Upload New Shapefile</h5>
+        </div>
+        <div class="modal-body">
+            <div class="alert alert-info" id="data-req"> <strong>Data Requirements:</strong> Must be a polygon shapefile or json file in a geographic projection (e.g. WGS84)</div>
+            <form class="form" method="post" enctype="multipart/form-data" action="upload_shp/">
+                {% csrf_token %}
+                {{ shpform }}
+                <br>
+                <input id="shp_submit" class="btn btn-success" type="submit" value="Upload new Shapefile">
+                <div class="flex-container-row"><img id="loading" class="view-file hidden" src="/static/nasaaccess/images/loader.gif" style="margin: auto"/></div>
+            </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- Upload New DEM Modal -->
+  <div class="modal fade" id="dem-modal" tabindex="-1" role="dialog" aria-labelledby="dem-modal-label">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h5 class="modal-title" id="dem-modal-label">Upload New DEM file</h5>
+        </div>
+        <div class="modal-body">
+            <div class="alert alert-info" id="data-req"> <strong>Data Requirements:</strong> Must be a TIFF file in a geographic projection (e.g. WGS84)</div>
+            <form class="form" method = "post" enctype="multipart/form-data" action="upload_dem/">
+                {% csrf_token %}
+                {{ demform }}
+                <br>
+                <input id="dem_submit" class="btn btn-success" type="submit" value="Upload New DEM">
+                <div class="flex-container-row"><img id="loading" class="view-file hidden" src="/static/nasaaccess/images/loader.gif" style="margin: auto"/></div>
+            </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

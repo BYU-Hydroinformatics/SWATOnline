@@ -1,0 +1,268 @@
+
+#app-content-wrapper #app-content {
+    padding-bottom:0;
+    margin:0;
+    height: 100%;
+}
+#app-content-wrapper #app-content #app-actions{
+    display:none;
+}
+
+#inner-app-content {
+    padding:0;
+    margin:0;
+    height: 100%;
+}
+
+#map_container{
+    width:100%;
+    height:100%;
+}
+
+#map{
+    width:100%;
+    height:100%;
+}
+
+#data-modal .modal-dialog{
+    top: 8%;
+    width: 90%;
+    height: 100%;
+    padding: 0px;
+    margin: auto;
+}
+
+#help-modal .modal-dialog{
+    top: 8%;
+    width: 90%;
+    height: 100%;
+    padding: 0px;
+    margin: auto;
+}
+
+.logo-image img {
+    height: auto;
+    width: auto;
+    max-width: 20%;
+    max-height: 100%;
+}
+
+.panel-body {
+    padding: 0px;
+}
+
+.left {
+    height: 100%;
+    width: 65%;
+    padding-top: 10px;
+    padding-right: 10px;
+    float: left;
+}
+
+.var_picker {
+    display: inline;
+    width: 40%;
+    float: left;
+    margin-right: 5px;
+}
+
+.var_picker .select2-search__field {
+    width: 100% !important;
+}
+
+.monthDayToggle {
+    float: left;
+    display: inline;
+}
+
+.monthDayToggle label {
+    margin-bottom: 0px !important;
+    margin-left: 5px
+    margin-right: 5px
+}
+
+.monthDayToggle .toggle.btn {
+    min-width: 90px;
+}
+.monthDayToggle .toggle.btn.btn-success {
+    width: 80px !important;
+    padding-left: 6px;
+}
+
+.monthDayToggle .toggle.btn.btn-danger {
+    width: 80px !important;
+    padding-right: 6px;
+}
+
+.date_picker {
+    float: left;
+    display: inline;
+    width: 40%;
+    margin-left: 5px
+}
+
+#rch_start_pick{
+    font-size: 11px;
+    border-top-left-radius: 5px !important;
+    border-bottom-left-radius: 5px !important;
+}
+
+#rch_end_pick{
+    font-size: 11px;
+    border-top-right-radius: 5px !important;
+    border-bottom-right-radius: 5px !important;
+}
+
+#sub_start_pick{
+    font-size: 11px;
+    border-top-left-radius: 5px !important;
+    border-bottom-left-radius: 5px !important;
+}
+
+#sub_end_pick{
+    font-size: 11px;
+    border-top-right-radius: 5px !important;
+    border-bottom-right-radius: 5px !important;
+}
+
+.right {
+    padding: 5px;
+    height: 500px;
+    width: 35%;
+    float: right;
+}
+
+#rch_map{
+    width: 100%;
+    height:100%;
+}
+
+#sub_map{
+    width: 100%;
+    height:100%;
+}
+
+#hru_map{
+    width: 100%;
+    height:100%;
+}
+
+#lulc_map{
+    width: 100%;
+    height:100%;
+}
+
+#lulc_map_container {
+    padding: 10px;
+    height: 500px;
+    width: 40%;
+    float: right;
+}
+
+#lulc_data_container {
+    height: 100%;
+    width: 55%;
+    float: left;
+}
+
+#soil_map{
+    width: 100%;
+    height:100%;
+}
+
+#soil_map_container {
+    padding: 10px;
+    height: 500px;
+    width: 40%;
+    float: right;
+}
+
+#soil_data_container {
+    height: 100%;
+    width: 55%;
+    float: left;
+}
+
+#nasaaccess_map{
+    width: 100%;
+    height:100%;
+}
+
+#nasaaccess_map_container {
+    padding: 10px;
+    height: 500px;
+    width: 40%;
+    float: right;
+}
+
+#nasaaccess_form_container {
+    height: 100%;
+    width: 55%;
+    float: left;
+}
+
+.data-buttons {
+    float: left;
+}
+
+#legend_container {
+    height: 600px;
+    width: 100%;
+}
+
+#legend_container img {
+    max-width:100%;
+    max-height:100%
+}
+
+.view-file {
+    position: absolute;
+    z-index: 10;
+    top: 50%;
+    left: 30%;
+}
+
+#tsData {
+    border-collapse: collapse;
+}
+
+#spatialData {
+    border-collapse: collapse;
+}
+
+#tsData td, #tsData th {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+}
+
+#spatialData td, #spatialData th {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+}
+
+#tsData th {
+    background-color: #ff7272;
+}
+
+#spatialData th {
+    background-color: #5aa3e8;
+}
+
+table {
+    border-style: solid;
+    border-width: 1px;
+    border-color: #647899;
+    border-radius: 5px;
+}
+
+input[type=submit] {
+    background-color: #4CAF50;
+    border: none;
+    border-radius: 3px;
+    color: white;
+    padding: 5px 10px;
+    text-decoration: none;
+    cursor: pointer;
+}

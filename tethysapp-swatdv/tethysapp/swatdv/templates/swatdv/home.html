@@ -1,0 +1,398 @@
+{% extends "swatdv/base.html" %}
+{% load tethys_gizmos %}
+
+{% block styles %}
+{{ block.super }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/openlayers/4.4.2/ol.css" type="text/css">
+<link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/css/bootstrap-datepicker3.css" rel="stylesheet"/>
+{% endblock %}
+
+{% block global_scripts %}
+{{block.super}}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/openlayers/4.4.2/ol.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/1.3.4/chroma.min.js"></script>
+<script src="https://code.highcharts.com/stock/highstock.js"></script>
+<script src="https://code.highcharts.com/modules/data.js"></script>
+<script src="https://code.highcharts.com/modules/drilldown.js"></script>
+<script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.4/js/bootstrap-datepicker.js"></script>
+{% endblock %}
+
+{% block header_buttons %}
+  <div id="data-modal-btn" class="header-button glyphicon-button hidden" data-toggle="tooltip" data-placement="bottom" title="Reopen Data Viewer">
+    <a data-toggle="modal" data-target="#data-modal"><span class="glyphicon glyphicon-stats"></span></a>
+  </div>
+  <div class="header-button glyphicon-button" data-toggle="tooltip" data-placement="bottom" title="Help">
+    <a data-toggle="modal" data-target="#help-modal"><span class="glyphicon glyphicon-question-sign"></span></a>
+  </div>
+{% endblock %}
+
+{% block app_navigation_items %}
+    <br>
+    <h4><strong>Select Watershed</strong></h4>
+      {% gizmo watershed_select %}
+    <br>
+    <h4><strong>Toggle Layers</strong></h4>
+    <div class="basinToggle">
+      <h6>Basins</h6>
+        <label>
+            <input id="basin_toggle" type="checkbox" checked data-toggle="toggle" data-on="On" data-off="Off" data-onstyle="success" data-offstyle="danger">
+        </label>
+    </div>
+    <div class="stationToggle">
+      <h6>Stations</h6>
+        <label>
+            <input id="station_toggle" type="checkbox" checked data-toggle="toggle" data-on="On" data-off="Off" data-onstyle="success" data-offstyle="danger">
+        </label>
+    </div>
+    <h6>Supplementary Layers</h6>
+    <div class="btn-group btn-group-toggle" data-toggle="buttons">
+        <label id="lulcToggle" class="btn btn-primary">
+          <input type="radio" class="radio" name="options" id="lulcOption" autocomplete="off"> Land Use/Land Cover
+        </label>
+        <label id="soilToggle" class="btn btn-primary">
+          <input type="radio" class="radio" name="options" id="soilOption" autocomplete="off"> Soil
+        </label>
+        <label id="noneToggle" class="btn btn-primary active">
+          <input type="radio" class="radio" name="options" id="noneOption" autocomplete="off" checked> None
+        </label>
+    </div>
+    <br>
+    <br>
+    <div id="legend_container"></div>
+
+
+{% endblock %}
+
+{% block app_content %}
+        <div id="map" class="map"></div>
+{% endblock %}
+
+{# Use the after_app_content block for modals #}
+{% block after_app_content %}
+  <!--Data Viewer Modal-->
+  <div class="modal fade" id="data-modal" tabindex="-1" role="dialog" aria-labelledby="data-modal-label">
+    <div class="modal-dialog" id="data-modal role="document">
+      <div class="modal-content">
+        <div id="tabs" class="modal-body">
+          <!-- Nav tabs -->
+          <ul class="nav nav-tabs" role="tablist">
+              <li role="presentation" id="rch_link" class ="active" aria-disabled><a id="rch_tab_link" href="#rch_tab" aria-controls="rch_tab" role="tab" data-toggle="tab">RCH Model Outputs</a></li>
+              <li role="presentation" id="sub_link"><a id="sub_tab_link" href="#sub_tab" aria-controls="sub_tab" role="tab" data-toggle="tab">Sub Model Outputs</a></li>
+              <li role="presentation" id="lulc_link"><a id="lulc_tab_link" href="#lulc_tab" aria-controls="lulc_tab" role="tab" data-toggle="tab">LULC Data</a></li>
+              <li role="presentation" id="soil_link"><a id="soil_tab_link" href="#soil_tab" aria-controls="soil_tab" role="tab" data-toggle="tab">Soil Data</a></li>
+              <li role="presentation" id="nasaaccess_link"><a id="nasaaccess_tab_link" href="#nasaaccess_tab" aria-controls="nasaaccess_tab" role="tab" data-toggle="tab">nasaaccess</a></li>
+              <li role="presentation" id="datacart_link"><a id="datacart_tab_link" href="#datacart_tab" aria-controls="datacart_tab" role="tab" data-toggle="tab">Data Cart</a></li>
+          </ul>
+
+          <!--Tab Panes-->
+          <div class="tab-content">
+            <div role="tabpanel" class="tab-pane active" id="rch_tab">
+              <div class="panel-body">
+                <div class="alert alert-danger" id="data-warning">
+                    <strong>Warning!</strong> This application and the data it contains are only prototypes. The SWAT data has not yet been validated and should not be used for decision support.
+                </div>
+                <h6 id="error" class="hidden"></h6>
+                <div class="left">
+                    <div class="alert alert-warning hidden" id="rch-not-avail">
+                        <strong>RCH data is not available for the selected watershed</strong>
+                    </div>
+                    <div class="alert alert-success hidden" id="rch_save_success">
+                        <strong>Success!</strong> This data has been saved to your cart.
+                    </div>
+                    <div id="rch_query" class="queryItems">
+                        <div id="rch_var_picker" class="var_picker">
+                            {% gizmo rch_var_select %}
+                        </div>
+                        <div id="rch_date_picker" class="date_picker">
+                            <div class="input-group input-daterange">
+                                {% gizmo rch_start_pick %}
+                                <div class="input-group-addon">to</div>
+                                {% gizmo rch_end_pick %}
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <div id="rch_chart_container" class="view_chart hidden"></div>
+                    <div class="flex-container-row"><img id="view-reach-loading" class="view-file hidden" src="/static/swatdv/images/loader.gif" style="margin: auto"/></div>
+                </div>
+                <div class="right">
+                  <div id="rch_map" class="rch_map"></div>
+                </div>
+              </div>
+            </div>
+            <div role="tabpanel" class="tab-pane" id="sub_tab">
+              <div class="panel-body">
+                <div class="alert alert-danger" id="data-warning">
+                    <strong>Warning!</strong> This application and the data it contains are only prototypes. The SWAT data has not yet been validated and should not be used for decision support.
+                </div>
+                <h6 id="error" class="hidden"></h6>
+                <div class="left">
+                    <div class="alert alert-warning hidden" id="sub-not-avail">
+                        <strong>SUB data is not available for the selected watershed</strong>
+                    </div>
+                    <div class="alert alert-success hidden" id="sub_save_success">
+                        <strong>Success!</strong> This data has been saved to your cart.
+                    </div>
+                    <div id="sub_query" class="queryItems">
+                        <div id="sub_var_picker" class="var_picker">
+                            {% gizmo sub_var_select %}
+                        </div>
+                        <div id="sub_date_picker" class="date_picker">
+                            <div class="input-group input-daterange">
+                                {% gizmo sub_start_pick %}
+                                <div class="input-group-addon">to</div>
+                                {% gizmo sub_end_pick %}
+                            </div>
+                        </div>
+                    </div>
+                    <br>
+                    <div id="sub_chart_container" class="view_chart hidden"></div>
+                    <div class="flex-container-row"><img id="view-sub-loading" class="view-file hidden" src="/static/swatdv/images/loader.gif" style="margin: auto"/></div>
+                </div>
+                <div class="right">
+                  <div id="sub_map" class="sub_map"></div>
+                </div>
+              </div>
+            </div>
+            <div role="tabpanel" class="tab-pane" id="lulc_tab">
+              <div class="panel-body">
+                <div class="alert alert-info hidden" id="under-dev"> <strong>Currently under development</strong></div>
+                <div id="lulc_data_container" class="lulc_data_container">
+                  <div class="alert alert-warning hidden" id="lulc-not-avail">
+                    <strong>LULC data is not available for the selected watershed</strong>
+                  </div>
+                  <div class="flex-container-row"><img id="lulc-loading" class="view-file hidden" src="/static/swatdv/images/loader.gif" style="margin: auto"/></div>
+                  <h6 id="error" class="hidden"></h6>
+                  <div id="lulcPieContainer" class="view_chart hidden"></div>
+                </div>
+                <div id="lulc_map_container" class="lulc_map_container">
+                  <div id="lulc_map" class="lulc_map"></div>
+                </div>
+              </div>
+            </div>
+            <div role="tabpanel" class="tab-pane" id="soil_tab">
+              <div class="panel-body">
+                <div class="alert alert-info hidden" id="under-dev"> <strong>Currently under development</strong></div>
+                <div id="soil_data_container" class="soil_data_container">
+                  <div class="alert alert-warning hidden" id="soil-not-avail">
+                    <strong>Soil data is not available for the selected watershed</strong>
+                  </div>
+                  <div class="flex-container-row"><img id="soil-loading" class="view-file hidden" src="/static/swatdv/images/loader.gif" style="margin: auto"/></div>
+                  <h6 id="error" class="hidden"></h6>
+                  <div id="soilPieContainer" class="view_chart hidden"></div>
+                </div>
+                <div id="soil_map_container" class="soil_map_container">
+                  <div id="soil_map" class="soil_map"></div>
+                </div>
+              </div>
+            </div>
+            <div role="tabpanel" class="tab-pane" id="nasaaccess_tab">
+              <div class="panel-body">
+                <div class="alert alert-info hidden" id="not-avail"> <strong>Currently under development</strong></div>
+                <div id="nasaaccess_form_container" class="nasaaccess_data_container">
+                  <div class="alert alert-warning hidden" id="na-not-avail">
+                    <strong>nasaaccess is not available for the selected watershed</strong>
+                  </div>
+                  <h6><strong>Select Date Range</strong></h6>
+                    <div class="input-group input-nadaterange">
+                        {% gizmo na_start_pick %}
+                        <div class="input-group-addon">to</div>
+                        {% gizmo na_end_pick %}
+                    </div>
+                    <h6><strong>Select NASAaccess Functions</strong></h6>
+                    <table id=nasaaccessFunctions class="table table-striped">
+                        <thead>
+                          <tr>
+                            <th></th>
+                            <th>Function</th>
+                            <th>Information</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td><input class="chk" type="checkbox" value="GLDASpolyCentroid"></td>
+                            <td>GLDAS Poly Centroid</td>
+                            <td>Generate air temperature input files as well as air temperature stations file from NASA GLDAS remote sensing products.</td>
+                          </tr>
+                          <tr>
+                            <td><input class="chk" type="checkbox" value="GLDASwat"></td>
+                            <td>GLDAS SWAT</td>
+                            <td>Generate SWAT air temperature input files as well as air temperature stations file from NASA GLDAS remote sensing products.</td>
+                          </tr>
+                          <tr>
+                            <td><input class="chk" type="checkbox" value="GPMpolyCentroid"></td>
+                            <td>GPM Poly Centroid</td>
+                            <td>Generate rainfall input files as well as rain station file from NASA GPM remote sensing products.</td>
+                          </tr>
+                          <tr>
+                            <td><input class="chk" type="checkbox" value="GPMswat"></td>
+                            <td>GPM SWAT</td>
+                            <td>Generate SWAT rainfall input files as well as rain stations file from NASA GPM remote sensing products.</td>
+                          </tr>
+                        </tbody>
+                    </table>
+
+                <br>
+                <button class="btn btn-primary" id="nasaaccess">Run nasaaccess</button>
+                </div>
+                <div id="nasaaccess_map_container" class="nasaaccess_map_container">
+                  <div id="nasaaccess_map" class="nasaaccess_map"></div>
+                </div>
+              </div>
+            </div>
+            <div role="tabpanel" class="tab-pane" id="datacart_tab">
+                <div class="panel-body">
+                    <div id="ts_table_container">
+                        <input id="userID" class="hidden" type="text" name="userID" />
+                        <h6>Timeseries data available for download</h6>
+                        <table id="tsData" class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Data Type</th>
+                                    <th>Parameters</th>
+                                    <th>Time Step</th>
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
+                                    <th>Stream/Basin ID</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tBodyTS">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="spatial_table_container">
+                        <h6>Spatial data available for download</h6>
+                        <table id="spatialData" class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Data Type</th>
+                                    <th>File Type</th>
+                                    <th>Outlet Stream ID</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tBodySpatial">
+                            </tbody>
+                        </table>
+                    </div>
+                    <form class="form" method="post" enctype="multipart/form-data" action="{% url 'swatdv:download_files' %}">
+                        {% csrf_token %}
+                        <input id="userID" class="hidden" type="text" name="userID">
+                        <input type="submit" value="Download">
+                    </form>
+                </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <div class="data-buttons">
+            <button id="rch_compute" class="btn btn-primary" type="button">Get RCH Data</button>
+            <button id="sub_compute" class="btn btn-primary hidden" type="button">Get SUB Data</button>
+            <button id="clip_lulc" class="btn btn-primary hidden" type="button">Clip LULC Raster</button>
+            <button id="lulc_compute" class="btn btn-success hidden" type="button">Compute LULC Statistics</button>
+            <button id="clip_soil" class="btn btn-primary hidden" type="button">Clip Soil Raster</button>
+            <button id="soil_compute" class="btn btn-success hidden" type="button">Compute Soil Statistics</button>
+            <button id="saveData" class="btn btn-success hidden" type="button">Add Data to Cart</button>
+          </div>
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- Contact Information Modal -->
+  <div class="modal fade" id="cont-modal" tabindex="-1" role="dialog" aria-labelledby="cont-modal-label">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h5 class="modal-title" id="cont-modal-label">Contact Information</h5>
+        </div>
+        <div class="modal-body">
+            <p>Depending on the watershed size and the date range you selected,
+                the nasaaccess process may take some time.
+                Please provide your email here and we will contact you with a
+                6 digit access code for downloading your data when the process is complete.</p>
+            <label for="id_email">Email Address:</label>
+            <input id="id_email" type="email" placeholder="Email" size="30" required<input>
+            <p>Your email will only remain in our database until your access code has been sent out.
+                The access code you receive will then be valid for 3 days.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" id="na_submit">Submit</button>
+            <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+<!-- Help Modal -->
+  <div class="modal fade" id="help-modal" tabindex="-1" role="dialog" aria-labelledby="help-modal-label">
+    <div class="modal-dialog" role="document">
+        <!-- Modal content-->
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title">WELCOME</h4>
+            </div>
+            <div class="modal-body">
+                <h5><strong>The SWAT Data Viewer is a web application for visualizing and sharing inputs/outputs from the Soil and Water Assessment Tool (SWAT). It is currently being developed by a team at NASA Goddard Space Flight Center as part of a NASA-SERVIR Applied Science grant in the Lower Mekong region.</strong></h5>
+                <br>
+                <h5>The following steps highlight the several functions of the SWAT Data Viewer web app</h5>
+                <ol>
+                    <li class="welcome-step"><b>In the left navigation panel, select a watershed to view</b></li>
+                    <li class="welcome-step"><b>Select a stream or subbasin from the map</b></li>
+                    <li class="welcome-step"><b>Explore the SWAT model inputs and outputs</b>
+                        <ul>
+                            <li class="welcome-substep1">Select a Variable (or multiple)
+                            <li class="welcome-substep1">Select start and end dates
+                            <li class="welcome-substep1">Click the "Get {RCH or SUB} Data" button to query the model outputs for the selected parameters
+                            <li class="welcome-substep1">Click the "Add Data to Cart" to add a .csv file of the time-series to data cart for downloading
+                        </ul>
+                    </li>
+                    <li class="welcome-step"><b>View land use and soil coverage information</b>
+                        <ul>
+                            <li class="welcome-substep1">Click the "Clip {LULC or SOIL} Raster" to view the land cover and soil within the contributing area to the selected stream or subbasin
+                            <li class="welcome-substep1">Click the "Compute {LULC or SOIL} Statistics" to view a pie chart depicting the coverage distribution of different land cover and soil classes
+                        </ul>
+                    </li>
+                    <li class="welcome-step"><b>Access GPM (precipitation) and GLDAS (air temperature) data products from NASA</b>
+                        <ul>
+                            <li class="welcome-substep1">Select a date range
+                            <li class="welcome-substep1">Select at least one of the nasaaccess functions
+                            <li class="welcome-substep1">Click the "Run nasaaccess" button
+                            <li class="welcome-substep1">Provide an email address for the app to contact you when the data is ready and click "Submit"
+                            <li class="welcome-substep1">Navigate the the nasaaaccess web application (in the same app portal) to download the data
+                        </ul>
+                    </li>
+                    <li class="welcome-step"><b>Download data</b>
+                        <ul>
+                            <li class="welcome-substep1">Time-series data will be in csv form
+                            <li class="welcome-substep1">Upstream subbasin and stream layers are GeoJSON files
+                            <li class="welcome-subsetp1">Upstream land cover and soil layers are TIFF files
+                        </ul>
+                    </li>
+                    <li class="welcome-step"><b>Click 'X' in the top-right of the app to return to the Main Apps Library</b></li>
+                    <li class = "welcom-step"><b>External Resources and Links:</b>
+                        <ul>
+                        </ul>
+                    </li>
+                </ol>
+                <p>If you have questions, comments, or requests for further functionality please contact Spencer McDonald at <a href="mailto:spencer.mcdonald@adpc.net">spencer.mcdonald@adpc.net</a></p>
+            </div>
+            <div class="modal-footer">
+                <div align="center" id="logos">
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--End modal content-->
+  </div>
+{% endblock %}
+
+{% block app_actions %}
+
+{% endblock %}
